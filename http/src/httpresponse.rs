@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io::{Result, Write};
 
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct HttpResponse<'a> {
     version: &'a str,
@@ -11,16 +10,16 @@ pub struct HttpResponse<'a> {
     body: Option<String>,
 }
 
-impl<'a> Default for HttpResponse<'a>  {
-   fn default() -> Self {
-       Self {
-        version: "HTTP/1.1".into(),
-        status_code: "200".into(),
-        status_text: "OK".into(),
-        headers: None,
-        body: None,
-       }
-   } 
+impl<'a> Default for HttpResponse<'a> {
+    fn default() -> Self {
+        Self {
+            version: "HTTP/1.1".into(),
+            status_code: "200".into(),
+            status_text: "OK".into(),
+            headers: None,
+            body: None,
+        }
+    }
 }
 impl<'a> HttpResponse<'a> {
     pub fn new(
@@ -38,7 +37,7 @@ impl<'a> HttpResponse<'a> {
                 let mut h = HashMap::new();
                 h.insert("Content-type", "text/html");
                 Some(h)
-            } 
+            }
         };
         response.status_text = match response.status_code {
             "200" => "OK".into(),
@@ -79,5 +78,80 @@ impl<'a> HttpResponse<'a> {
             None => "",
         }
     }
-    
+}
+impl<'a> From<HttpResponse<'a>> for String {
+    fn from(res: HttpResponse) -> String {
+        let res1 = res.clone();
+        format!(
+            "{} {} {}\r\n{}Content-Length: {}\r\n\r\n{}",
+            &res1.version(),
+            &res1.status_code(),
+            &res1.status_text(),
+            &res1.headers(),
+            &res.body.unwrap().len(),
+            &res1.body()
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_response_struct_creations_200() {
+        let response_actual = HttpResponse::new(
+            "200",
+            None,
+            Some("Item was shipped on 21st Dec 2020".into()),
+        );
+        let response_expected = HttpResponse {
+            version: "HTTP/1.1",
+            status_code: "200",
+            status_text: "OK",
+            headers: {
+                let mut h = HashMap::new();
+                h.insert("Content-type", "text/html");
+                Some(h)
+            },
+            body: Some("Item was shipped on 21st Dec 2020".into()),
+        };
+        assert_eq!(response_actual, response_expected);
+    }
+    #[test]
+    fn test_response_struct_creations_404() {
+        let response_actual = HttpResponse::new(
+            "404",
+            None,
+            Some("Item was shipped on 21st Dec 2020".into()),
+        );
+        let response_expected = HttpResponse {
+            version: "HTTP/1.1",
+            status_code: "404",
+            status_text: "Not Found",
+            headers: {
+                let mut h = HashMap::new();
+                h.insert("Content-type", "text/html");
+                Some(h)
+            },
+            body: Some("Item was shipped on 21st Dec 2020".into()),
+        };
+        assert_eq!(response_actual, response_expected);
+    }
+    #[test]
+    fn test_http_response_creation() {
+        let response_expected = HttpResponse {
+            version: "HTTP/1.1",
+            status_code: "404",
+            status_text: "Not Found",
+            headers: {
+                let mut h = HashMap::new();
+                h.insert("Content-type", "text/html");
+                Some(h)
+            },
+            body: Some("Item was shipped on 21st Dec 2020".into()),
+        };
+        let http_string: String = response_expected.into();
+        let response_actual = "HTTP/1.1 404 Not Found\r\nContent-type:text/html\r\nContent-Length: 33\r\n\r\nItem was shipped on 21st Dec 2020";
+        assert_eq!(http_string, response_actual);
+    }
 }
