@@ -32,7 +32,7 @@ impl<'a> HttpResponse<'a> {
             response.status_code = status_code.into();
         };
         response.headers = match &headers {
-            Some(h) => headers,
+            Some(_h) => headers,
             None => {
                 let mut h = HashMap::new();
                 h.insert("Content-type", "text/html");
